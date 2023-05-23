@@ -1,11 +1,10 @@
 import HttpClient, { MultiServiceBaseURLRecords, HttpClientOptions } from "./HttpClient";
 
-export * from "./HttpErrorStatus";
+export * from "./HttpErrors";
 export * from "./Plugin";
 
 export default HttpClient;
-export {
-    HttpClient,
+export type {
     HttpClientOptions,
     MultiServiceBaseURLRecords
 }

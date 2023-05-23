@@ -1,24 +1,17 @@
 import Store from "./Store";
 import { Plugin, PluginDefinition, PluginOptionals } from "./Plugin";
 import HttpClient, { MultiServiceBaseURLRecords } from "./HttpClient";
+import {isFunction} from "./util";
 
 export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBaseURLRecords> extends Store<Plugin> {
     constructor(private readonly context: HttpClient<UserMultiServiceBaseURLRecords>) {
         super();
         this.context = context;
-        this.initUserStore();
-    }
-
-    protected initUserStore() {
-        if(this.context.options.store) {
-            // @ts-ignore
-            this.store = this.context.options.store;
-        }
     }
 
     public getPlugins<PluginName extends PluginOptionals = PluginOptionals>(pluginName: PluginName): Plugin[] {
         return this.store.filter(plugin => {
-            return typeof plugin[pluginName] === "function";
+            return isFunction(plugin[pluginName]);
         });
     }
 
@@ -40,8 +33,8 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     ) {
         const hooks = this.getHooks(pluginName);
         for (const hook of hooks) {
-            // TODO: 如果其中一个插件运行失败，停止运行后续插件并抛出错误
-            await hook.apply(this.context, args);        
+            // @ts-ignore
+            await hook.apply(this.context, args);
         }
     }
 
@@ -51,6 +44,7 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     ) {
         const hooks = this.getHooks(pluginName);
         for (const hook of hooks) {
+            // @ts-ignore
             hook.apply(this.context, args);
         }
     }
@@ -69,7 +63,9 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
         const hooks = this.getHooks(pluginName);
         const [first, ...rest] = hooks;
         return rest.reduce((prev, next) => {
+            // @ts-ignore
             return next.apply(this.context, [prev, ...args]);
+            // @ts-ignore
         }, first.apply(this.context, args))
     }
 
@@ -88,7 +84,9 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
         const hooks = this.getHooks(pluginName);
         const [first, ...rest] = hooks;
         return rest.reduce(async (prev, next) => {
+            // @ts-ignore
             return next.apply(this.context, [await prev, ...args]);
+            // @ts-ignore
         }, first.apply(this.context, args))
     }
 }

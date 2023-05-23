@@ -1,4 +1,4 @@
-export enum HttpErrorStatus {
+export enum HttpErrors {
   REQUEST_REJECTED = "REQUEST_REJECTED",
   RESPONSE_REJECTED = "RESPONSE_REJECTED",
   NETWORK_ERROR = "NETWORK_ERROR",

@@ -1,8 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 import PluginStore from "./PluginStore";
 import { Plugin } from "./Plugin";
-import { isFunction, isObject, isString, genUUID } from "./util";
-import { HttpErrorStatus } from "./HttpErrorStatus";
+import { isObject, isString, genUUID } from "./util";
+import { HttpErrors } from "./HttpErrors";
 
 export type MultiServiceBaseURLRecords = Record<string, string> & {
   default?: string;
@@ -16,13 +16,12 @@ export interface HttpClientOptions<
    */
   baseURL?:
     | AxiosRequestConfig["baseURL"]
-    | string
     | UserMultiServiceBaseURLRecords;
 
   /**
    * axios实例
    */
-  client?: AxiosInstance | ((options: HttpClientOptions) => AxiosInstance);
+  client?: AxiosInstance;
 
   /**
    * 自定义插件
@@ -40,11 +39,6 @@ export interface HttpClientOptions<
   loading?: boolean;
 
   /**
-   * 不需要auth的请求规则
-   */
-  noAuth?: RegExp | ((url: string) => boolean);
-
-  /**
    * worker 环境
    */
   worker?: boolean;
@@ -56,39 +50,47 @@ export default class HttpClient<
   /**
    * 插件类
    */
-  public readonly plugin: PluginStore<UserMultiServiceBaseURLRecords>;
+  public plugin: PluginStore<UserMultiServiceBaseURLRecords> | undefined;
 
   /**
    * Axios 请求实例
    */
-  public requestClient: AxiosInstance;
+  public requestClient: AxiosInstance | undefined;
 
   constructor(
     public readonly options: HttpClientOptions<UserMultiServiceBaseURLRecords> = {}
   ) {
-    this.plugin = new PluginStore<UserMultiServiceBaseURLRecords>(this);
+    this.initGlobalPluginStore();
+
     this.initRequestClient();
     this.initGlobalPlugin();
+
+    /**
+     * 初始化拦截器
+     * */
+    this.requestInterceptor();
+    this.responseInterceptor();
+  }
+
+  protected initGlobalPluginStore() {
+    if (this.options.store) {
+      this.plugin = this.options.store;
+    } else {
+      this.plugin = new PluginStore<UserMultiServiceBaseURLRecords>(this);
+    }
   }
 
   protected initGlobalPlugin() {
     if (this.options.plugins && this.options.plugins.length) {
-      this.plugin.add(this.options.plugins);
+      this.plugin!.add(this.options.plugins);
     }
   }
 
   protected initRequestClient() {
     const userHttpClient = this.options.client;
-    /**
-     * 用户自定义初始化axios实例
-     */
-    if (userHttpClient && isFunction(userHttpClient)) {
-      this.requestClient = userHttpClient.call(this, this.options);
-    } else if (userHttpClient) {
+    if (userHttpClient) {
       this.requestClient = userHttpClient;
-    }
-
-    if (!this.requestClient) {
+    } else {
       // TODO: 更好的提取参数方式
       const {
         client,
@@ -119,7 +121,7 @@ export default class HttpClient<
 
       // 将baseURL作为多请求的Key使用
       if (isObject(this.options.baseURL)) {
-        return this.options.baseURL?.[baseURL] || baseURL;
+        return (this.options.baseURL as MultiServiceBaseURLRecords)?.[baseURL] || baseURL;
       }
 
       return baseURL;
@@ -158,6 +160,9 @@ export default class HttpClient<
     if (!this.requestClient?.request) {
       throw new Error("HttpClient instance is not initialized");
     }
+
+    this.plugin!.runHookOnionSync("onBefore", config)
+
     return this.requestClient.request<Data, R, D>(
       this.mergeConfig(config, {
         baseURL: this.getBaseURL(config.baseURL),
@@ -166,22 +171,22 @@ export default class HttpClient<
   }
 
   public requestInterceptor() {
-    this.requestClient.interceptors.request.use(
+    this.requestClient!.interceptors.request.use(
       (config) => {
-        this.plugin.runHook("onRequest", config.url, config);
+        this.plugin!.runHook("onRequest", config.url, config);
         return config;
       },
       (error) => {
-        this.plugin.runHook(
+        this.plugin!.runHook(
           "onError",
-          HttpErrorStatus.INVALID_REQUEST_ERROR,
+            HttpErrors.INVALID_REQUEST_ERROR,
           error
         );
-        this.plugin.runHook("onFinally", {
+        this.plugin!.runHook("onFinally", {
           config: error.config,
           response: error.response,
           error,
-          reason: HttpErrorStatus.INVALID_REQUEST_ERROR,
+          reason: HttpErrors.INVALID_REQUEST_ERROR,
         });
         return Promise.reject(error);
       }
@@ -189,28 +194,28 @@ export default class HttpClient<
   }
 
   public responseInterceptor() {
-    this.requestClient.interceptors.response.use(
+    this.requestClient!.interceptors.response.use(
       async (response) => {
-        const userResponseData = await this.plugin.runHookOnionSync(
+        const userResponseData = await this.plugin!.runHookOnionSync(
           "onResponse",
           response.data,
           response
         );
         const result = userResponseData || response.data;
-        this.plugin.runHook("onFinally", { config: response.config, response });
+        this.plugin!.runHook("onFinally", { config: response.config, response });
         return result;
       },
       (error) => {
-        this.plugin.runHook(
+        this.plugin!.runHook(
           "onError",
-          HttpErrorStatus.INVALID_RESPONSE_ERROR,
+            HttpErrors.INVALID_RESPONSE_ERROR,
           error
         );
-        this.plugin.runHook("onFinally", {
+        this.plugin!.runHook("onFinally", {
           config: error.config,
           response: error.response,
           error,
-          reason: HttpErrorStatus.INVALID_RESPONSE_ERROR,
+          reason: HttpErrors.INVALID_RESPONSE_ERROR,
         });
         return Promise.reject(error);
       }
@@ -218,7 +223,7 @@ export default class HttpClient<
   }
 
   public applyCancel(cancelID: string, reason?: string) {
-    this.plugin.runHook("onCancel", cancelID, reason);
+    this.plugin!.runHook("onCancel", cancelID, reason);
   }
 
   public createCancelID() {
