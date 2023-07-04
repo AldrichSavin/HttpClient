@@ -83,6 +83,9 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     ): Promise<ReturnType<PluginDefinition[PluginName]>> {
         const hooks = this.getHooks(pluginName);
         const [first, ...rest] = hooks;
+    
+        if(!first) return Promise.resolve(args) as any;
+
         return rest.reduce(async (prev, next) => {
             // @ts-ignore
             return next.apply(this.context, [await prev, ...args]);
