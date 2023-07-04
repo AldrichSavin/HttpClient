@@ -1,10 +1,10 @@
 import Store from "./Store";
 import { Plugin, PluginDefinition, PluginOptionals } from "./Plugin";
-import HttpClient, { MultiServiceBaseURLRecords } from "./HttpClient";
+import HttpCore, { MultiServiceBaseURLRecords } from "./HttpCore";
 import {isFunction} from "./util";
 
 export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBaseURLRecords> extends Store<Plugin> {
-    constructor(private readonly context: HttpClient<UserMultiServiceBaseURLRecords>) {
+    constructor(private readonly context: HttpCore<UserMultiServiceBaseURLRecords>) {
         super();
         this.context = context;
     }

@@ -1,5 +1,5 @@
 import { AxiosResponse, AxiosRequestConfig } from "axios";
-import { HttpErrors } from "./HttpErrors";
+import { Status } from "./status";
 
 export type MockAdapter =
   | { mock: false }
@@ -19,15 +19,16 @@ export interface PluginDefinition {
     ) => void | AxiosRequestConfig;
 
     onResponse: (responseData: AxiosResponse["data"], response: AxiosResponse) => Promise<AxiosResponse['data'] | AxiosResponse | void> | AxiosResponse['data'] | AxiosResponse;
+
     onError: (
-        httpErrorReason: string | HttpErrors,
+        httpErrorReason: string | Status,
         error?: Error,
         context?: Record<string, any>,
     ) => void;
     
     onCancel: (
         cancelID: string,
-        reason?: string | HttpErrors,
+        reason?: string | Status,
         config?: AxiosRequestConfig,
         context?: Record<string, any>,
     ) => void;

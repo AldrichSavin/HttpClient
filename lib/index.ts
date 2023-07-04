@@ -1,10 +1,11 @@
-import HttpClient, { MultiServiceBaseURLRecords, HttpClientOptions } from "./HttpClient";
+import HttpCore, { MultiServiceBaseURLRecords, HttpCoreOptions } from "./HttpCore";
 
-export * from "./HttpErrors";
+export * from "./status";
 export * from "./Plugin";
+export * from "./HttpClient";
 
-export default HttpClient;
+export default HttpCore;
 export type {
-    HttpClientOptions,
+    HttpCoreOptions,
     MultiServiceBaseURLRecords
 }
