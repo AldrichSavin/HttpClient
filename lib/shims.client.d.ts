@@ -1,4 +1,4 @@
-import { ContentOptionalTypes, ContentTypeOptionalKeys, HttpClientFlag } from "./HttpClientFlag";
+import { ContentOptionalTypes, ContentTypeOptionalKeys, RequestConfigConstants } from "./constants";
 
 declare module "axios" {
   export interface AxiosRequestConfig {
@@ -30,7 +30,7 @@ declare module "axios" {
     /**
      * 是否允许不授权的请求
      */
-    noAuth?: boolean | HttpClientFlag.ALLOWED_NOT_AUTHORIZED;
+    noAuth?: boolean | RequestConfigConstants.ALLOWED_NOT_AUTHORIZED;
 
     /**
      * 启动mock模式
