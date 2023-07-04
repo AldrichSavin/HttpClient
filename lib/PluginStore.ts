@@ -50,8 +50,6 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     }
 
     /**
-     * @title 洋葱模式运行插件的生命周期
-     * 
      * @param pluginName
      * @param args 
      * @returns 
@@ -59,9 +57,28 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     public runHookOnion<PluginName extends PluginOptionals = PluginOptionals>(
         pluginName: PluginName,
         ...args: Parameters<PluginDefinition[PluginName]>
-    ): ReturnType<PluginDefinition[PluginName]> {
+    ): ReturnType<PluginDefinition[PluginName]> | undefined {
         const hooks = this.getHooks(pluginName);
+        /**
+         * In case the plug-in is not queried,
+         * it may mean that the hookName was passed in error or that the developer manually called
+         * the method of executing the plug-in externally/but did not implement it
+         *
+         * In order to prevent the impact of misoperation on the data,
+         * the internal default is to return undefined when there is no plug-in
+         */
+        if(!hooks.length) return undefined;
+
         const [first, ...rest] = hooks;
+        /**
+         * When a developer registers only one plugin,
+         * it means that there is no need to continue with subsequent iterations
+         */
+        if(!rest.length && first) {
+            // @ts-ignore
+            return first.apply(this.context, args);
+        }
+
         return rest.reduce((prev, next) => {
             // @ts-ignore
             return next.apply(this.context, [prev, ...args]);
@@ -80,11 +97,27 @@ export default class PluginStore<UserMultiServiceBaseURLRecords = MultiServiceBa
     public runHookOnionSync<PluginName extends PluginOptionals = PluginOptionals>(
         pluginName: PluginName,
         ...args: Parameters<PluginDefinition[PluginName]>
-    ): Promise<ReturnType<PluginDefinition[PluginName]>> {
+    ): Promise<ReturnType<PluginDefinition[PluginName]>> | Promise<undefined> {
         const hooks = this.getHooks(pluginName);
+        /**
+         * In case the plug-in is not queried,
+         * it may mean that the hookName was passed in error or that the developer manually called
+         * the method of executing the plug-in externally/but did not implement it
+         *
+         * In order to prevent the impact of misoperation on the data,
+         * the internal default is to return undefined when there is no plug-in
+         */
+        if(!hooks.length) return Promise.resolve(undefined);
+
         const [first, ...rest] = hooks;
-    
-        if(!first) return Promise.resolve(args) as any;
+        /**
+         * When a developer registers only one plugin,
+         * it means that there is no need to continue with subsequent iterations
+         */
+        if(!rest.length && first) {
+            // @ts-ignore
+            return first.apply(this.context, args);
+        }
 
         return rest.reduce(async (prev, next) => {
             // @ts-ignore
