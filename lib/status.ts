@@ -1,4 +1,4 @@
-export enum HttpErrors {
+export enum Status {
   REQUEST_REJECTED = "REQUEST_REJECTED",
   RESPONSE_REJECTED = "RESPONSE_REJECTED",
   NETWORK_ERROR = "NETWORK_ERROR",
@@ -9,5 +9,4 @@ export enum HttpErrors {
   CODE_ERROR = "CODE_ERROR",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
   UNEXPECTED_ERROR = "UNEXPECTED_ERROR",
-  EXCEEDANCE = 'exceedance'
 }

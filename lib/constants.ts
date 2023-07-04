@@ -1,4 +1,4 @@
-export enum HttpClientFlag {
+export enum RequestConfigConstants {
   /**
    * The request is allowed not authorized.
    */
