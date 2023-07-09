@@ -25,7 +25,7 @@ instance.interceptors.response.use((response) => {
 });
 ```
 
-Now
+Now（Minimal changes）
 ```typescript
 import HttpClient from "./HttpClient";
 
